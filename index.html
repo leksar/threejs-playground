@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>My first three.js app</title>
+	<style>
+		body {
+			margin: 0;
+		}
+
+		canvas {
+			display: block;
+		}
+	</style>
+</head>
+
+<body>
+
+	<script src="js/three.js"></script>
+	<script>
+		var scene = new THREE.Scene();
+		var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+		var renderer = new THREE.WebGLRenderer();
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		document.body.appendChild(renderer.domElement);
+		document.body.addEventListener('keydown', onKeyDown, false);
+
+		// main part
+		var distance = 100;
+		var geometry = new THREE.Geometry();
+
+		for (var i = 0; i < 1000; i++) {
+
+			var vertex = new THREE.Vector3();
+
+			// var theta = THREE.Math.randFloatSpread(360);
+			// var phi = THREE.Math.randFloatSpread(360);
+
+			// vertex.x = distance * Math.sin(theta) * Math.cos(phi);
+			// vertex.y = distance * Math.sin(theta) * Math.sin(phi);
+			// vertex.z = distance * Math.cos(theta);
+
+			vertex.x = Math.floor((Math.random() * distance) - (distance / 2))
+			vertex.y = Math.floor((Math.random() * distance) - (distance / 2))
+			vertex.z = Math.floor((Math.random() * distance) - (distance / 2))
+
+			geometry.vertices.push(vertex);
+		}
+		var particles = new THREE.PointCloud(geometry, new THREE.PointCloudMaterial({
+			color: 0xff0000
+		}));
+		// particles.boundingSphere = 50;
+		camera.position.z = 200;
+		scene.add(particles);
+
+
+		(function animate() {
+			requestAnimationFrame(animate);
+			renderer.render(scene, camera);
+			// camera.position.z += .8;
+
+		})()
+
+		function onKeyDown() {
+			switch (event.keyCode) {
+				case 83: // up
+					camera.position.z += 5;
+					break;
+				case 87: // down
+					camera.position.z -= 5;
+					break;
+				case 65: //left
+					camera.rotation.y += .1;
+					break;
+			}
+
+		}
+	</script>
+</body>
+
+</html>
