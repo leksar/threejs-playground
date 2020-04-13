@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>My first three.js app</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        #c {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="c"></canvas>
+
+    <script src="js/three.js"></script>
+    <script>
+        // import * as THREE from './js/three.js';
+
+        function resizeRendererToDisplaySize(renderer) {
+            const canvas = renderer.domElement;
+            const pixelRatio = window.devicePixelRatio;
+            const width = canvas.clientWidth * pixelRatio | 0;
+            const height = canvas.clientHeight * pixelRatio | 0;
+            const needResize = canvas.width !== width || canvas.height !== height;
+            if (needResize) {
+                renderer.setSize(width, height, false);
+            }
+            return needResize;
+        }
+
+        function main() {
+            document.body.addEventListener('keydown', onKeyDown, false);
+            const canvas = document.getElementById("c");
+            const renderer = new THREE.WebGLRenderer({ canvas });
+
+            // camera
+            const fov = 75;
+            const aspect = 2;
+            const near = 0.1;
+            const far = 20;
+            const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+            camera.position.z = 4;
+            camera.position.x = 2;
+            // camera.position.y = .5;
+
+            // camera.rotation.x = -.4;
+            // camera.rotation.y = .4;w
+            // camera.rotation.z = .2;
+
+            const scene = new THREE.Scene();
+
+            // box
+            const boxWidth = 2;
+            const boxHeight = 2;
+            const boxDepth = 4;
+            const geometry = new THREE.WireframeGeometry(
+                new THREE.BoxBufferGeometry(
+                    boxWidth, boxHeight, boxDepth));
+
+            const cube = addLineGeometry(0, 0, new THREE.EdgesGeometry(
+                new THREE.BoxBufferGeometry(boxWidth, boxHeight, boxDepth),
+                15));
+
+            //light
+            {
+                const color = 0xFFFFFF;
+                const intensity = 1;
+                const light = new THREE.DirectionalLight(color, intensity);
+                light.position.set(-1, 2, 4);
+                scene.add(light);
+            }
+
+            //particles
+
+            const emitters = [
+                { x: -1, y: 0, z: 1, value: 20 },
+                { x: -1, y: -1, z: 1, value: 20 },
+                { x: 0, y: 0, z: 1, value: 30 },
+                { x: 0, y: -1, z: 1, value: 20 },
+                { x: -1, y: 0, z: 0, value: 30 },
+                { x: -1, y: -1, z: 0, value: 40 },
+                { x: 0, y: 0, z: 0, value: 30 },
+                { x: 0, y: -1, z: 0, value: 20 },
+                { x: -1, y: 0, z: -1, value: 60 },
+                { x: -1, y: -1, z: -1, value: 60 },
+                { x: 0, y: 0, z: -1, value: 60 },
+                { x: 0, y: -1, z: -1, value: 60 },
+                { x: -1, y: 0, z: -2, value: 60 },
+                { x: -1, y: -1, z: -2, value: 60 },
+                { x: 0, y: 0, z: -2, value: 60 },
+                { x: 0, y: -1, z: -2, value: 60 },
+            ]
+
+            let globalParticles = [];
+            let globalClouds = [];
+            emitters.forEach(el => {
+                var particlesMaterial = new THREE.PointCloudMaterial({
+                    color: new THREE.Color("hsl(" + el.value + ", 100%, 50%)"),
+                    size: .01,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthTest: false
+                });
+
+                var particleCount = 10000;
+                var particles = new THREE.Geometry();
+                for (var i = 0; i < particleCount; i++) {
+                    var pX = Math.random();
+                    var pY = Math.random();
+                    var pZ = Math.random();
+                    particle = new THREE.Vector3(pX + el.x, pY + el.y, pZ + el.z);
+                    particle.velocity = new THREE.Vector3(0, Math.random(), 0);
+                    particles.vertices.push(particle);
+                    globalParticles.push({ particle: particle, limits: [el.x, el.y, el.z] })
+                }
+
+                var pointCloud = new THREE.PointCloud(particles, particlesMaterial);
+                pointCloud.sortParticles = true;
+                scene.add(pointCloud);
+                globalClouds.push(pointCloud);
+            });
+
+            console.log(globalParticles);
+            // render
+            function render(time) {
+                time *= 0.001
+
+                if (resizeRendererToDisplaySize(renderer)) {
+                    const canvas = renderer.domElement;
+                    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                    camera.updateProjectionMatrix();
+                }
+
+                globalParticles.forEach(({ particle, limits }) => {
+
+                    if (particle.y > limits[1] + 1) {
+                        particle.y = limits[1];
+                    }
+
+                    particle.y += particle.velocity.y * 0.005;
+
+                })
+
+                globalClouds.forEach(cloud => {
+                    cloud.geometry.verticesNeedUpdate = true;
+                });
+
+                camera.rotation.y += .004;
+                camera.position.z -= .01;
+                renderer.render(scene, camera);
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+
+
+            function addLineGeometry(x, y, geometry) {
+                const material = new THREE.LineBasicMaterial({ color: 0x777777 });
+                const mesh = new THREE.LineSegments(geometry, material);
+                return addObject(x, y, mesh);
+            }
+
+            function addObject(x, y, obj) {
+                obj.position.x = x;
+                obj.position.y = y;
+
+                scene.add(obj);
+                return obj;
+            }
+
+            function onKeyDown() {
+                switch (event.keyCode) {
+                    case 83: // up
+                        camera.position.z += .1;
+                        break;
+                    case 87: // down
+                        camera.position.z -= .1;
+                        break;
+                    case 65: //left
+                        camera.rotation.y += .1;
+                        break;
+                }
+
+            }
+        }
+
+        main();
+    </script>
+</body>
+
+</html>
